@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub仓库活跃度分析器</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #219ebc;
+            --secondary-color: #8ecae6;
+            --background-color: #f5f7fa;
+            --text-color: #023047;
+            --border-color: #8ecae6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            position: relative;
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .main-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        .settings-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2em;
+            color: var(--primary-color);
+            padding: 5px;
+            transition: color 0.3s ease;
+        }
+
+        .settings-btn:hover {
+            background: none;
+            color: var(--secondary-color);
+        }
+
+        select, button {
+            font-size: 1em;
+            padding: 10px 15px;
+            margin: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: white;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        select:focus, button:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.5);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        /* 响应式设计优化 */
+        @media (max-width: 600px) {
+            .main-controls {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .main-controls select, button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+
+
+        select, button {
+            font-size: 1em;
+            padding: 10px 15px;
+            margin: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: white;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        select:focus, button:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.5);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        #loading {
+            text-align: center;
+            display: none;
+            font-style: italic;
+            color: var(--primary-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+
+        table a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        table a:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        tr:hover {
+            background-color: #f0f8ff;
+        }
+
+        .bar-container {
+            width: 100%;
+            background-color: #e0e6ed;
+            position: relative;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .bar {
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            transition: width 0.5s ease-out;
+        }
+
+        .commits-bar {
+            background-color: var(--primary-color);
+        }
+
+        .contributors-bar {
+            background-color: var(--secondary-color);
+        }
+
+        .bar-text {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.show {
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 30px;
+            border: none;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+            box-sizing: border-box; /* 确保padding不会增加总宽度 */
+        }
+
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .modal p {
+            margin-bottom: 15px;
+        }
+
+        .modal input[type="text"],
+        .modal textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box; /* 确保padding不会增加总宽度 */
+        }
+
+        .modal input[type="text"]:focus,
+        .modal textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .modal textarea {
+            height: 150px;
+            resize: vertical;
+        }
+
+        .modal button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%; /* 使按钮宽度与输入框一致 */
+        }
+
+        .modal button:hover {
+            background-color: #2980b9;
+        }
+
+        /* 响应式设计优化 */
+        @media (max-width: 600px) {
+            .modal-content {
+                width: 95%;
+                margin: 5% auto;
+                padding: 20px 15px; /* 减少左右内边距 */
+            }
+
+            .modal h2 {
+                font-size: 1.3em;
+            }
+
+            .modal input[type="text"],
+            .modal textarea {
+                font-size: 16px; /* 增大字体大小，防止在某些移动设备上自动缩放 */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="settings-controls">
+            <button id="accessKeyBtn" class="settings-btn" title="修改Access Key">
+                <i class="fas fa-key"></i>
+            </button>
+            <button id="configBtn" class="settings-btn" title="修改Config">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+        <h1>GitHub仓库活跃度分析器</h1>
+        <div class="control-panel">
+            <div class="main-controls">
+                <select id="timeRange">
+                    <option value="7">一周</option>
+                    <option value="30">一个月</option>
+                    <option value="90">一个季度</option>
+                    <option value="180">半年</option>
+                    <option value="365">一年</option>
+                    <option value="730">二年</option>
+                    <option value="all">无限长</option>
+                </select>
+                <button id="analyzeBtn">分析仓库</button>
+            </div>
+        </div>
+        <div id="loading">正在分析，请稍候...</div>
+        <div id="result"></div>
+    </div>
+
+    <!-- Access Key Modal -->
+    <div id="accessKeyModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>修改GitHub Access Key</h2>
+            <p>请输入您的GitHub Personal Access Token：</p>
+            <input type="text" id="accessKeyInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+            <button id="saveAccessKey">保存</button>
+        </div>
+    </div>
+
+    <!-- Config Modal -->
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>修改仓库配置</h2>
+            <p>请输入要分析的GitHub仓库列表，每行一个仓库，格式为"用户名/仓库名"：</p>
+            <textarea id="configInput" placeholder="例如：
+octocat/Hello-World
+microsoft/vscode
+facebook/react"></textarea>
+            <button id="saveConfig">保存</button>
+        </div>
+    </div>
+
+    <script src="github-analyzer.js"></script>
+</body>
+</html>
