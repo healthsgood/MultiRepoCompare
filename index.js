@@ -1,13 +1,13 @@
-// GitHub API 请求的基础 URL
+// Base URL for GitHub API requests
 const API_BASE_URL = 'https://api.github.com';
 
-// 从 localStorage 获取 Access Key
+// Get Access Key from localStorage
 let ACCESS_TOKEN = localStorage.getItem('githubAccessKey') || '';
 
-// 从 localStorage 获取 config
+// Get config from localStorage
 let repositories = JSON.parse(localStorage.getItem('githubConfig')) || [];
 
-// 模态框相关元素
+// Modal related elements
 const accessKeyModal = document.getElementById('accessKeyModal');
 const configModal = document.getElementById('configModal');
 const accessKeyBtn = document.getElementById('accessKeyBtn');
@@ -16,13 +16,13 @@ const closeButtons = document.getElementsByClassName('close');
 const saveAccessKeyBtn = document.getElementById('saveAccessKey');
 const saveConfigBtn = document.getElementById('saveConfig');
 
-// 打开模态框
+// Open modal
 function openModal(modal) {
     modal.style.display = 'block';
     setTimeout(() => modal.classList.add('show'), 10);
 }
 
-// 关闭模态框
+// Close modal
 function closeModal(modal) {
     modal.classList.remove('show');
     setTimeout(() => modal.style.display = 'none', 300);
@@ -38,21 +38,21 @@ configBtn.onclick = () => {
     document.getElementById('configInput').value = repositories.join('\n');
 };
 
-// 关闭模态框
+// Close modal
 Array.from(closeButtons).forEach(button => {
     button.onclick = function() {
         closeModal(this.closest('.modal'));
     }
 });
 
-// 点击模态框外部关闭
+// Close modal when clicking outside
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
         closeModal(event.target);
     }
 }
 
-// 保存 Access Key
+// Save Access Key
 saveAccessKeyBtn.onclick = () => {
     const newAccessKey = document.getElementById('accessKeyInput').value;
     ACCESS_TOKEN = newAccessKey;
@@ -60,7 +60,7 @@ saveAccessKeyBtn.onclick = () => {
     closeModal(accessKeyModal);
 };
 
-// 保存 Config
+// Save Config
 saveConfigBtn.onclick = () => {
     const newConfig = document.getElementById('configInput').value;
     repositories = newConfig.split('\n').filter(repo => repo.trim() !== '');
@@ -76,7 +76,7 @@ async function fetchRepoData(repo, since) {
     };
 
     try {
-        // 并行请求提交数和贡献者数
+        // Parallel requests for commits and contributors count
         const [commitsResponse, contributorsResponse] = await Promise.all([
             fetch(`${API_BASE_URL}/repos/${owner}/${repoName}/commits?since=${since}&per_page=1`, { headers }),
             fetch(`${API_BASE_URL}/repos/${owner}/${repoName}/contributors?per_page=1`, { headers })
@@ -85,7 +85,7 @@ async function fetchRepoData(repo, since) {
         const commitsLink = commitsResponse.headers.get('Link');
         const contributorsLink = contributorsResponse.headers.get('Link');
 
-        // 解析 Link header 以获取总数
+        // Parse Link header to get total count
         const commitsCount = parseLinkHeader(commitsLink);
         const contributorsCount = parseLinkHeader(contributorsLink);
 
@@ -112,13 +112,12 @@ async function analyzeRepositories() {
     const loadingDiv = document.getElementById('loading');
 
     loadingDiv.style.display = 'block';
-    resultDiv.innerHTML = '';
 
     let since = new Date();
     if (timeRange !== 'all') {
         since.setDate(since.getDate() - parseInt(timeRange));
     } else {
-        since = new Date(0); // 从 1970 年开始
+        since = new Date(0); // Start from 1970
     }
 
     try {
@@ -129,20 +128,20 @@ async function analyzeRepositories() {
         const repoDataPromises = repositories.map(repo => fetchRepoData(repo, since.toISOString()));
         let repoData = await Promise.all(repoDataPromises);
 
-        // 按 commit 数排序
+        // Sort by commit count
         repoData.sort((a, b) => b.commits - a.commits);
 
-        // 找出最大值用于归一化
+        // Find max values for normalization
         const maxCommits = Math.max(...repoData.map(repo => repo.commits));
         const maxContributors = Math.max(...repoData.map(repo => repo.contributors));
 
-        // 创建表格
+        // Create table
         let tableHTML = `
             <table>
                 <tr>
-                    <th>仓库</th>
-                    <th>总Commit数</th>
-                    <th>贡献者数量</th>
+                    <th>Repo Name</th>
+                    <th>Latest Commits</th>
+                    <th>Authors</th>
                 </tr>
         `;
 
@@ -177,7 +176,7 @@ async function analyzeRepositories() {
         resultDiv.innerHTML = tableHTML;
     } catch (error) {
         console.error('Error during analysis:', error);
-        resultDiv.innerHTML = '<p>分析过程中发生错误，请检查控制台以获取详细信息。</p>';
+        resultDiv.innerHTML = '<p>An error occurred during analysis. Please check the console for details.</p>';
     } finally {
         loadingDiv.style.display = 'none';
     }
@@ -185,7 +184,11 @@ async function analyzeRepositories() {
 
 document.getElementById('analyzeBtn').addEventListener('click', analyzeRepositories);
 
-// 初始化时加载配置
+if (ACCESS_TOKEN.length === 0) {
+    openModal(accessKeyModal);
+}
+
+// Load configuration on initialization
 if (repositories.length === 0) {
     openModal(configModal);
 }

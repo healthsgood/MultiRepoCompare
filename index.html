@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub仓库活跃度分析器</title>
+    <title>GitHub Activity Comparison</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -24,43 +24,66 @@
         }
 
         .container {
-            position: relative;
             max-width: 1000px;
-            margin: 0 auto;
+            margin: 0 auto 20px;
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title-container {
+            flex-grow: 1;
         }
 
         h1 {
-            text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 30px;
-            font-size: 2.5em;
+            color: var(--text-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+
+        h2 {
+            color: var(--text-color);
+            font-size: 1em;
+            margin: 5px 0 0;
+            font-weight: normal;
         }
 
         .control-panel {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .main-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 15px;
-            width: 100%;
-        }
-
-        .settings-controls {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
             gap: 10px;
+        }
+
+        select, button {
+            font-size: 0.9em;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: white;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        select:focus, button:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.5);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
         }
 
         .settings-btn {
@@ -74,74 +97,7 @@
         }
 
         .settings-btn:hover {
-            background: none;
             color: var(--secondary-color);
-        }
-
-        select, button {
-            font-size: 1em;
-            padding: 10px 15px;
-            margin: 5px;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            background-color: white;
-            color: var(--text-color);
-            transition: all 0.3s ease;
-        }
-
-        select:focus, button:focus {
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.5);
-        }
-
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #2980b9;
-        }
-
-        /* 响应式设计优化 */
-        @media (max-width: 600px) {
-            .main-controls {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .main-controls select, button {
-                width: 100%;
-                margin: 5px 0;
-            }
-        }
-
-
-        select, button {
-            font-size: 1em;
-            padding: 10px 15px;
-            margin: 5px;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            background-color: white;
-            color: var(--text-color);
-            transition: all 0.3s ease;
-        }
-
-        select:focus, button:focus {
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.5);
-        }
-
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #2980b9;
         }
 
         #loading {
@@ -149,23 +105,23 @@
             display: none;
             font-style: italic;
             color: var(--primary-color);
+            margin-top: 20px;
+        }
+
+        .table-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            overflow-x: auto;
         }
 
         table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0 10px;
-        }
-
-        table a {
-            color: var(--primary-color);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        table a:hover {
-            color: #2980b9;
-            text-decoration: underline;
         }
 
         th, td {
@@ -251,7 +207,7 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transform: translateY(-20px);
             transition: transform 0.3s ease;
-            box-sizing: border-box; /* 确保padding不会增加总宽度 */
+            box-sizing: border-box;
         }
 
         .modal.show .modal-content {
@@ -278,7 +234,7 @@
             border-radius: 4px;
             font-size: 14px;
             transition: border-color 0.3s ease;
-            box-sizing: border-box; /* 确保padding不会增加总宽度 */
+            box-sizing: border-box;
         }
 
         .modal input[type="text"]:focus,
@@ -302,69 +258,108 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            width: 100%; /* 使按钮宽度与输入框一致 */
+            width: 100%;
         }
 
         .modal button:hover {
             background-color: #2980b9;
         }
 
-        /* 响应式设计优化 */
-        @media (max-width: 600px) {
-            .modal-content {
-                width: 95%;
-                margin: 5% auto;
-                padding: 20px 15px; /* 减少左右内边距 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        .empty-state p {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
             }
 
-            .modal h2 {
-                font-size: 1.3em;
+            .control-panel {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                margin-top: 15px;
             }
 
-            .modal input[type="text"],
-            .modal textarea {
-                font-size: 16px; /* 增大字体大小，防止在某些移动设备上自动缩放 */
+            select, button {
+                flex-grow: 1;
+            }
+
+            .table-container {
+                padding: 10px;
+            }
+
+            th, td {
+                padding: 10px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="settings-controls">
-            <button id="accessKeyBtn" class="settings-btn" title="修改Access Key">
-                <i class="fas fa-key"></i>
-            </button>
-            <button id="configBtn" class="settings-btn" title="修改Config">
-                <i class="fas fa-cog"></i>
-            </button>
-        </div>
-        <h1>GitHub仓库活跃度分析器</h1>
-        <div class="control-panel">
-            <div class="main-controls">
+        <div class="header">
+            <div class="title-container">
+                <h1>GitHub Activity Comparison</h1>
+                <h2>Comparing GitHub Development Trends</h2>
+            </div>
+            <div class="control-panel">
                 <select id="timeRange">
-                    <option value="7">一周</option>
-                    <option value="30">一个月</option>
-                    <option value="90">一个季度</option>
-                    <option value="180">半年</option>
-                    <option value="365">一年</option>
-                    <option value="730">二年</option>
-                    <option value="all">无限长</option>
+                    <option value="7">One Week</option>
+                    <option value="30">One Month</option>
+                    <option value="90">One Quarter</option>
+                    <option value="180">Half a Year</option>
+                    <option value="365">One Year</option>
+                    <option value="730">Two Years</option>
+                    <option value="all">All Time</option>
                 </select>
-                <button id="analyzeBtn">分析仓库</button>
+                <button id="analyzeBtn">Compare</button>
+                <button id="accessKeyBtn" class="settings-btn" title="Modify GitHub Access Key">
+                    <i class="fas fa-key"></i>
+                </button>
+                <button id="configBtn" class="settings-btn" title="Modify Repository List">
+                    <i class="fas fa-cog"></i>
+                </button>
             </div>
         </div>
-        <div id="loading">正在分析，请稍候...</div>
-        <div id="result"></div>
+        <div id="loading">Analyzing, please wait…</div>
+    </div>
+
+    <div class="table-container">
+        <div id="result">
+            <div class="empty-state">
+                <i class="fas fa-chart-bar"></i>
+                <h3>No Data to Display Yet</h3>
+                <p>Select a time range and click 'Compare' to analyze GitHub repository activity.</p>
+            </div>
+        </div>
     </div>
 
     <!-- Access Key Modal -->
     <div id="accessKeyModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>修改GitHub Access Key</h2>
-            <p>请输入您的GitHub Personal Access Token：</p>
+            <h2>Modify GitHub Access Key</h2>
+            <p>Please enter your GitHub Personal Access Token:</p>
             <input type="text" id="accessKeyInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-            <button id="saveAccessKey">保存</button>
+            <button id="saveAccessKey">Save</button>
         </div>
     </div>
 
@@ -372,13 +367,13 @@
     <div id="configModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>修改仓库配置</h2>
-            <p>请输入要分析的GitHub仓库列表，每行一个仓库，格式为"用户名/仓库名"：</p>
-            <textarea id="configInput" placeholder="例如：
+            <h2>Modify Repository List</h2>
+            <p>Please enter the list of GitHub repositories to analyze, one per line, in the format 'username/repository name':</p>
+            <textarea id="configInput" placeholder="For example:
 octocat/Hello-World
 microsoft/vscode
 facebook/react"></textarea>
-            <button id="saveConfig">保存</button>
+            <button id="saveConfig">Save</button>
         </div>
     </div>
 
